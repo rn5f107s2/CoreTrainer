@@ -3,28 +3,25 @@
 #include <cassert>
 
 DataEntry::DataEntry(const std::string &entry) {
-    unsigned int sq = 56, idx = 0;
+    unsigned int sq = 63, idx = 0;
     bool posSegment = true;
-    unsigned int wKing = 64, bKing = 64;
-    while (entry[idx] != '<' && idx < entry.size()) {
+    while (entry[idx] != '[' && idx < entry.size()) {
         char c = entry[idx];
 
         if (c == ' ') posSegment = false;
 
         if (posSegment) {
             if ('1' <= c && c <= '8') {
-                sq += c - '0';
+                sq -= c - '0';
             } else if (c == '/') {
-                sq -= 16;
+                sq --;
             } else {
                 switch (c) {
                     case 'K':
                         addFeature(WHITE, KING, sq);
-                        wKing = sq;
                         break;
                     case 'k':
                         addFeature(BLACK, KING, sq);
-                        bKing = sq;
                         break;
                     case 'P':
                         addFeature(WHITE, PAWN, sq);
@@ -57,34 +54,23 @@ DataEntry::DataEntry(const std::string &entry) {
                         addFeature(BLACK, QUEEN, sq);
                         break;
                 }
-                sq++;
+                sq--;
             }
         } else if (entry[idx] == 'w')
             stm = WHITE;
         idx++;
     }
-    assert(wKing != 64 && bKing != 64);
 
-    // Apply king buckets
-    const unsigned int whiteOffset = KING_BUCKET[wKing] * 768;
-    const unsigned int blackOffset = KING_BUCKET[bKing ^ 56] * 768;
+    wdl = (entry[++idx] == '1') ? idx += 2, 1.0f : (idx++, entry[++idx] == '5' ? 0.5f : 0.0f);
 
-    for (unsigned int &feature : whiteFeatureIndexes) {
-        feature += whiteOffset;
-    }
-
-    for (unsigned int &feature : blackFeatureIndexes) {
-        feature += blackOffset;
-    }
+    idx += 4;
 
     std::string evalStr;
-    for (idx++; entry[idx] != '>' && idx < entry.size(); idx++) {
+    for (idx++; entry[idx] != ' ' && idx < entry.size(); idx++) {
         evalStr += entry[idx];
     }
     idx++;
     eval = sigmoid(std::stoi(evalStr) / EVAL_SCALE);
-
-    wdl = (entry[idx] == '-') ? 0.0f : (entry[idx] == '0' ? 0.5f : 1.0f);
 }
 
 Dataset::Dataset(const std::string &fileName) {
@@ -100,7 +86,8 @@ bool Dataset::readEntries(DataEntry *entries, bool &newEpoch) {
     std::string line;
     for (unsigned int idx = 0; idx < BATCH_SIZE; idx++) {
         if (std::getline(file, line)) {
-            entries[idx] = DataEntry(line);
+            if (line.find("//") == std::string::npos)
+                entries[idx] = DataEntry(line);
         } else {
             idx--;
             file.clear();
