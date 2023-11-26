@@ -13,9 +13,7 @@ DataEntry::DataEntry(const std::string &entry) {
         if (posSegment) {
             if ('1' <= c && c <= '8') {
                 sq -= c - '0';
-            } else if (c == '/') {
-                sq --;
-            } else {
+            } else if (c != '/') {
                 switch (c) {
                     case 'K':
                         addFeature(WHITE, KING, sq);
