@@ -5,7 +5,7 @@
 DataEntry::DataEntry(const std::string &entry) {
     unsigned int sq = 63, idx = 0;
     bool posSegment = true;
-    while (entry[idx] != '[' && idx < entry.size()) {
+    while (entry[idx] != '|' && idx < entry.size()) {
         char c = entry[idx];
 
         if (c == ' ') posSegment = false;
@@ -59,15 +59,16 @@ DataEntry::DataEntry(const std::string &entry) {
         idx++;
     }
 
-    wdl = (entry[++idx] == '1') ? idx += 2, 1.0f : (idx++, entry[++idx] == '5' ? 0.5f : 0.0f);
-
-    idx += 4;
+    idx++;
 
     std::string evalStr;
-    for (idx++; entry[idx] != ' ' && idx < entry.size(); idx++) {
+    for (idx++; entry[idx] != ' ' && idx < entry.size(); idx++)
         evalStr += entry[idx];
-    }
-    idx++;
+
+    idx += 2;
+
+    wdl = (entry[++idx] == '1') ? 1.0f : (idx++, entry[++idx] == '5' ? 0.5f : 0.0f);
+
     eval = sigmoid(std::stoi(evalStr) / EVAL_SCALE);
 }
 
@@ -84,8 +85,7 @@ bool Dataset::readEntries(DataEntry *entries, bool &newEpoch) {
     std::string line;
     for (unsigned int idx = 0; idx < BATCH_SIZE; idx++) {
         if (std::getline(file, line)) {
-            if (line.find("//") == std::string::npos)
-                entries[idx] = DataEntry(line);
+            entries[idx] = DataEntry(line);
         } else {
             idx--;
             file.clear();
